@@ -12,13 +12,13 @@ jobs:
       with:
         fetch-depth: 1
         repository: da-ar/action_pub
-        path: action_pub
+        path: ../action_pub
 
     - name: Checkout Sub Code
       uses: actions/checkout@v2
       with:
         fetch-depth: 1
-        path: action_sub
+        path: .
 
     - name: Context
       run: |
@@ -28,11 +28,10 @@ jobs:
 
     - name: perform operation
       run: |
-          cat action_pub/copy_me.txt >> action_sub/copied.txt
+          cat ../action_pub/copy_me.txt >> copied.txt
 
     - name: Create commits
       run: |
-        cd action_sub
         git config user.email "ukprototype@gmail.com"
         git config user.name "Dave Armstrong"
         git add copied.txt
