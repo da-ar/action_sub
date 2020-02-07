@@ -1,0 +1,44 @@
+name: event_listener
+
+on: [repository_dispatch]
+
+jobs:
+  grab-scarp:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Pub Code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+        repository: da-ar/action_pub
+        path: action_pub
+
+    - name: Checkout Sub Code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+        path: action_sub
+
+    - name: Context
+      run: |
+        pwd
+        ls -la action_pub
+        ls -la action_sub
+
+    - name: perform operation
+      run: |
+          cat action_pub/copy_me.txt >> action_sub/copied.txt
+
+    - name: Create commits
+      run: |
+        cd action_sub
+        git config user.email "ukprototype@gmail.com"
+        git config user.name "Dave Armstrong"
+        git add copied.txt
+        git commit -m "automatic commit"
+
+    - name: Create Pull Request
+      uses: repo-sync/pull-request@v2
+      with:
+        github_token: ${{ secrets.subscription_token }}
