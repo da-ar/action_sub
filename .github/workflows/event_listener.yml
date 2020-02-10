@@ -3,7 +3,7 @@ name: event_listener
 on: [repository_dispatch]
 
 jobs:
-  grab-scarp:
+  process-event:
     runs-on: ubuntu-latest
 
     steps:
@@ -12,13 +12,13 @@ jobs:
       with:
         fetch-depth: 1
         repository: da-ar/action_pub
-        path: ../action_pub
+        path: action_pub
 
     - name: Checkout Sub Code
       uses: actions/checkout@v2
       with:
         fetch-depth: 1
-        path: .
+        path: action_sub
 
     - name: Context
       run: |
@@ -26,18 +26,42 @@ jobs:
         ls -la action_pub
         ls -la action_sub
 
-    - name: perform operation
+    - name: Install hub
       run: |
-          cat ../action_pub/copy_me.txt >> copied.txt
+        curl -fsSL https://github.com/github/hub/raw/master/script/get | bash -s 2.14.1
+        pwd
+        ls -la
 
-    - name: Create commits
+    - name: Prepare Branch
+      working-directory:  ./action_sub
       run: |
         git config user.email "ukprototype@gmail.com"
         git config user.name "Dave Armstrong"
+        git checkout -b pr-sync
+
+    - name: perform operation
+      run: |
+        cat action_pub/copy_me.txt >> action_sub/copied.txt
+
+    - name: Create commits
+      working-directory:  ./action_sub
+      run: |
         git add copied.txt
         git commit -m "automatic commit"
+        ../bin/hub push origin pr-sync
+      env:
+        GITHUB_TOKEN: ${{ secrets.subscription_token }}
 
-    - name: Create Pull Request
-      uses: repo-sync/pull-request@v2
-      with:
-        github_token: ${{ secrets.subscription_token }}
+    - name: Create Pr
+      working-directory:  ./action_sub
+      run: |
+        ../bin/hub pull-request -b master -h pr-sync -m "Automated Commit PR"
+      env:
+        GITHUB_TOKEN: ${{ secrets.subscription_token }}
+
+    - name: Tidy up
+      if: always()
+      run: |
+        bin/hub push --delete origin pr-sync
+      env:
+        GITHUB_TOKEN: ${{ secrets.subscription_token }}
